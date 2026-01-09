@@ -24,16 +24,5 @@ def load_containers():
 
         config["path"] = folder
         containers.append(config)
-  
+
     return containers
-
-def stats(self):
-    result = {}
-
-    for name, proc in self.processes.items():
-        stats = get_process_stats(proc)
-        if stats:
-            result[name] = stats
-
-    return result
-

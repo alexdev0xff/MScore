@@ -69,6 +69,15 @@ def load(self):
 
     print("[Registry] Final containers:", self.containers.keys())
 
+def stats(self):
+    result = {}
+
+    for name, proc in self.processes.items():
+        stats = get_process_stats(proc)
+        if stats:
+            result[name] = stats
+
+    return result
 
 
 # singleton
