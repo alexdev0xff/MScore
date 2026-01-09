@@ -1,7 +1,7 @@
 name: minecraft
 
 ports:
-  game: 25565
+  game: 25566sr
   rcon: 25575
 
 startup:

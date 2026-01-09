@@ -1,4 +1,5 @@
 from core.monitor import get_process_stats
+from core.ports import is_port_free
 from core.container_manager import load_containers
 from core.process_manager import ContainerProcess
 import shutil
@@ -23,6 +24,8 @@ class ContainerRegistry:
     def start(self, name):
         if name not in self.containers:
             raise ValueError(f"Container '{name}' not found")
+
+        self._check_ports(name)
 
         if name in self.processes and self.processes[name].is_running():
             print(f"[Registry] {name} already running")
@@ -116,6 +119,31 @@ class ContainerRegistry:
 
         shutil.rmtree(path)
         print(f"[Registry] {name} removed")
+
+    def _check_ports(self, name):
+     cfg = self.containers[name]
+     ports = cfg.get("ports", [])
+
+     if isinstance(ports, dict):
+        ports = ports.values()
+
+     ports = [int(p) for p in ports]
+
+     for port in ports:
+        for other, ocfg in self.containers.items():
+            if other == name:
+                continue
+
+            oports = ocfg.get("ports", [])
+            if isinstance(oports, dict):
+                oports = oports.values()
+            oports = [int(p) for p in oports]
+
+            if port in oports:
+                raise RuntimeError(f"Port {port} already reserved by {other}")
+
+        if not is_port_free(port):
+            raise RuntimeError(f"Port {port} already in use")
 
 
 registry = ContainerRegistry()
