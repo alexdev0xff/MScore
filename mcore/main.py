@@ -1,5 +1,3 @@
-# core/main.py
-import time
 from core.registry import registry
 
 
@@ -29,7 +27,10 @@ class McoreDaemon:
         print("Commands:")
         print("  start <name>")
         print("  stop <name>")
+        print("  kill <name>")
         print("  restart <name>")
+        print("  attach <name>")
+        print("  remove <name>")
         print("  status")
         print("  exit")
 
@@ -52,8 +53,17 @@ class McoreDaemon:
                 elif action == "stop" and len(parts) == 2:
                     registry.stop(parts[1])
 
+                elif action == "kill" and len(parts) == 2:
+                    registry.kill(parts[1])
+
+                elif action in ("rm", "remove", "delete") and len(parts) == 2:
+                    registry.remove(parts[1])
+
                 elif action == "restart" and len(parts) == 2:
                     registry.restart(parts[1])
+
+                elif action == "attach" and len(parts) == 2:
+                    registry.attach(parts[1])
 
                 elif action == "status":
                     statuses = registry.status()
@@ -61,15 +71,9 @@ class McoreDaemon:
 
                     for name, state in statuses.items():
                         line = f"{name}: {state}"
-
                         if state == "RUNNING" and name in stats:
                             s = stats[name]
-                            line += (
-                                f" | CPU {s['cpu']:.1f}%"
-                                f" | RAM {s['memory']} MB"
-                                f" | uptime {s['uptime']}s"
-                            )
-
+                            line += f" | CPU {s['cpu']:.1f}% | RAM {s['memory']} MB | uptime {s['uptime']}s"
                         print(line)
 
                 elif action in ("exit", "quit"):
@@ -82,11 +86,8 @@ class McoreDaemon:
                 print(f"[ERROR] {e}")
 
     def shutdown(self):
-        print("\n[Mcore] Shutting down...")
+        print("\n[Mcore] Exiting CLI...")
         self.running = False
-
-        for name in list(registry.processes.keys()):
-            registry.stop(name)
 
     def run(self):
         self.banner()

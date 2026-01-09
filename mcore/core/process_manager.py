@@ -1,8 +1,8 @@
-# core/process_manager.py
 import subprocess
 import threading
 import time
 import os
+
 
 class ContainerProcess:
     def __init__(self, config):
@@ -18,7 +18,6 @@ class ContainerProcess:
         self.restart_delay = restart_cfg.get("delay", 5)
 
     def _build_env(self):
-        """Готовит ENV для start.sh из container.yaml"""
         env = os.environ.copy()
 
         java = self.config.get("java", {})
@@ -52,7 +51,8 @@ class ContainerProcess:
             stdin=subprocess.PIPE,
             text=True,
             bufsize=1,
-            env=env
+            env=env,
+            start_new_session=True
         )
 
         threading.Thread(target=self._read_output, daemon=True).start()
@@ -63,7 +63,6 @@ class ContainerProcess:
     def _read_output(self):
         for line in self.process.stdout:
             self.output.append(line)
-            print(f"[{self.name}] {line}", end="")
 
     def _watchdog(self):
         self.process.wait()
@@ -72,15 +71,18 @@ class ContainerProcess:
             time.sleep(self.restart_delay)
             self.start()
 
-    def send_command(self, command: str):
+    def send_command(self, command):
         if self.is_running():
             self.process.stdin.write(command + "\n")
             self.process.stdin.flush()
 
     def stop(self):
         if self.is_running():
-            # для Minecraft правильнее stop, а не terminate
             self.send_command("stop")
 
+    def kill(self):
+        if self.is_running():
+            self.process.kill()
+
     def is_running(self):
-        return self.process and self.process.poll() is None
+        return self.process is not None and self.process.poll() is None

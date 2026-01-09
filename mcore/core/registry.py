@@ -1,12 +1,13 @@
-# core/registry.py
 from core.monitor import get_process_stats
 from core.container_manager import load_containers
 from core.process_manager import ContainerProcess
+import shutil
+
 
 class ContainerRegistry:
     def __init__(self):
-        self.containers = {}   # name -> config
-        self.processes = {}    # name -> ContainerProcess
+        self.containers = {}
+        self.processes = {}
 
     def load(self):
         containers = load_containers()
@@ -16,6 +17,8 @@ class ContainerRegistry:
             name = c.get("name")
             print(f"[Registry] Loaded container: {name}")
             self.containers[name] = c
+
+        print("[Registry] Final containers:", self.containers.keys())
 
     def start(self, name):
         if name not in self.containers:
@@ -39,6 +42,15 @@ class ContainerRegistry:
         proc.stop()
         print(f"[Registry] {name} stopped")
 
+    def kill(self, name):
+        proc = self.processes.get(name)
+        if not proc or not proc.is_running():
+            print(f"[Registry] {name} not running")
+            return
+
+        proc.kill()
+        print(f"[Registry] {name} killed")
+
     def restart(self, name):
         self.stop(name)
         self.start(name)
@@ -58,27 +70,52 @@ class ContainerRegistry:
             result[name] = "RUNNING" if proc and proc.is_running() else "STOPPED"
         return result
 
-def load(self):
-    containers = load_containers()
-    print(f"[Registry] Found {len(containers)} containers")
+    def stats(self):
+        result = {}
+        for name, proc in self.processes.items():
+            s = get_process_stats(proc)
+            if s:
+                result[name] = s
+        return result
 
-    for c in containers:
-        name = c.get("name")
-        print(f"[Registry] Loaded container: {name}")
-        self.containers[name] = c
+    def attach(self, name):
+        proc = self.processes.get(name)
+        if not proc or not proc.is_running():
+            print(f"[Registry] {name} not running")
+            return
 
-    print("[Registry] Final containers:", self.containers.keys())
+        print(f"[Attach] Connected to {name}")
 
-def stats(self):
-    result = {}
+        try:
+            for line in proc.output[-100:]:
+                print(line, end="")
 
-    for name, proc in self.processes.items():
-        stats = get_process_stats(proc)
-        if stats:
-            result[name] = stats
+            last_len = len(proc.output)
 
-    return result
+            while proc.is_running():
+                if len(proc.output) > last_len:
+                    for line in proc.output[last_len:]:
+                        print(line, end="")
+                    last_len = len(proc.output)
+
+        except KeyboardInterrupt:
+            print("\n[Attach] Detached")
+
+    def remove(self, name):
+        if name in self.processes and self.processes[name].is_running():
+            self.stop(name)
+
+        cfg = self.containers.get(name)
+        if not cfg:
+            raise ValueError(f"Container '{name}' not found")
+
+        path = cfg["path"]
+
+        self.processes.pop(name, None)
+        self.containers.pop(name, None)
+
+        shutil.rmtree(path)
+        print(f"[Registry] {name} removed")
 
 
-# singleton
 registry = ContainerRegistry()
