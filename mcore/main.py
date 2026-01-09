@@ -57,8 +57,20 @@ class McoreDaemon:
 
                 elif action == "status":
                     statuses = registry.status()
+                    stats = registry.stats()
+
                     for name, state in statuses.items():
-                        print(f"{name}: {state}")
+                        line = f"{name}: {state}"
+
+                        if state == "RUNNING" and name in stats:
+                            s = stats[name]
+                            line += (
+                                f" | CPU {s['cpu']:.1f}%"
+                                f" | RAM {s['memory']} MB"
+                                f" | uptime {s['uptime']}s"
+                            )
+
+                        print(line)
 
                 elif action in ("exit", "quit"):
                     self.shutdown()
@@ -91,4 +103,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -1,5 +1,5 @@
 # core/registry.py
-
+from core.monitor import get_process_stats
 from core.container_manager import load_containers
 from core.process_manager import ContainerProcess
 
@@ -68,6 +68,7 @@ def load(self):
         self.containers[name] = c
 
     print("[Registry] Final containers:", self.containers.keys())
+
 
 
 # singleton
