@@ -1,7 +1,0 @@
-name: minecraft
-auto_start: false
-start: bash start.sh
-
-restart:
-  on_crash: true
-  delay: 5
